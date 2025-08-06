@@ -6,8 +6,10 @@ from dotenv import load_dotenv
 import requests
 from tenacity import before_sleep_log, retry, stop_after_attempt, wait_fixed
 
+from utils import logging_config
+
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
+logging_config()
 logger = logging.getLogger(__name__)
 
 snk_url_base = os.getenv('SANKHYA_URL_BASE')
@@ -24,7 +26,7 @@ snk_username = os.getenv("SANKHYA_USERNAME")
     retry_error_callback=lambda state: logger.error("Todas as tentativas falharam.")
 )
 def login():
-    logger.info("🟢 Buscando token para acesso ao Sankhya")
+    logger.info("🔒 Autenticando na API do Sankhya")
     url = f'{snk_url_base}/login'
     headers = {
         'token':    snk_token,
@@ -53,7 +55,7 @@ def login():
     retry_error_callback=lambda state: logger.error("Todas as tentativas falharam.")
 )
 def snk_post(token, service, payload):
-    logger.info(f"🟢 POST {service}")
+    logger.debug(f"🔗 POST {service}")
     url = f'{snk_url_base}/gateway/v1/mge/service.sbr'
     params = {'serviceName': service, 'outputType': 'json'}
     headers = {'Authorization': f'Bearer {token}'}
@@ -62,5 +64,5 @@ def snk_post(token, service, payload):
     resp.raise_for_status()
 
     result = resp.json()
-    logger.info(json.dumps(result, indent=2, ensure_ascii=False))
+    logger.debug(json.dumps(result, indent=2, ensure_ascii=False))
     return result

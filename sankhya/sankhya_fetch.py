@@ -72,6 +72,7 @@ def sankhya_list_total_codprod(token, batch_size=5000):
                 WHERE ATIVO = 'S'
                   AND USOPROD = 'R'
                   AND CODGRUPOPROD <= '1159999'
+                  AND CODPROD > 28953
             ) AS T
             WHERE RN BETWEEN {start} AND {end}
         """

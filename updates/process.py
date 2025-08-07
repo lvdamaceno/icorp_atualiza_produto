@@ -2,6 +2,7 @@ import logging
 import time
 
 from icorp.icorp_send import icorp_post
+from img.fetch_img import fetch_img
 from sankhya.sankhya_fetch import sankhya_fetch_json_produto, sankhya_fetch_json_estoque
 
 
@@ -12,13 +13,14 @@ def process_product(token, product):
 
 
 def process_image(product):
+    img_url = fetch_img(product)
     logging.info(f"🚀 Enviando imagem do produto")
     imagem = [
         {
             "CodigoProduto": f"{product}",
             "Ordem": 0,
             "Descricao": f"{product}.jpg",
-            "URLImagem": f"https://img.casacontente.com.br/{product}.jpg",
+            "URLImagem": f"{img_url}",
             "IsImgPadrao": False
         }
     ]

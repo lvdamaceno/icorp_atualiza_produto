@@ -11,9 +11,6 @@ logging_config()
 
 
 def _process_one(token: str, product: str) -> float:
-    """
-    Executa todo o fluxo de integração de um produto e retorna o tempo gasto.
-    """
     start = time.perf_counter()
     logging.info(f"▶️ Iniciando integração do produto: {product}")
 
@@ -25,9 +22,6 @@ def _process_one(token: str, product: str) -> float:
     return elapsed
 
 def process_all(products: list[str], token: str, max_workers: int = 5):
-    """
-    Processa a lista de produtos em paralelo, até `max_workers` simultâneos.
-    """
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # dispara todas as tarefas
         futures = {

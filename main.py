@@ -46,8 +46,5 @@ def process_all(products: list[str], token: str, max_workers: int = 5):
 
 if __name__ == "__main__":
     token = login()
-
-    # products = sankhya_list_codprod(token)
-    products = ['444923', '444924']
-
+    products = sankhya_list_codprod(token)
     process_all(products, token, max_workers=10)

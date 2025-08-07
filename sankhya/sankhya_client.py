@@ -4,6 +4,7 @@ import os
 
 from dotenv import load_dotenv
 import requests
+from requests.adapters import HTTPAdapter
 from tenacity import before_sleep_log, retry, stop_after_attempt, wait_fixed
 
 from utils import logging_config
@@ -19,6 +20,9 @@ snk_password = os.getenv("SANKHYA_PASSWORD")
 snk_username = os.getenv("SANKHYA_USERNAME")
 
 session = requests.Session()
+adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100, max_retries=3, pool_block=True)
+session.mount("https://", adapter)
+session.mount("http://", adapter)
 
 @retry(
     stop=stop_after_attempt(5),

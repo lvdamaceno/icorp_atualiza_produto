@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 from sankhya.sankhya_client import snk_post
 from utils import logging_config
@@ -59,10 +60,13 @@ def sankhya_fetch_json_produto(token, codprod):
         }
     }
     try:
+        start = time.perf_counter()
         response = snk_post(token, snk_service, request_body)
         json_str = response["responseBody"]["rows"][0][0]
         produto = json.loads(json_str)
         logging.debug(json.dumps(produto, indent=2, ensure_ascii=False))
+        elapsed = time.perf_counter() - start  # tempo decorrido
+        logging.info(f"🕐 [Sankhya] Latência: {elapsed:.3f}s para {codprod}")
         return produto
     except Exception as e:
         logging.error(e)
@@ -78,10 +82,13 @@ def sankhya_fetch_json_estoque(token, codprod):
         }
     }
     try:
+        start = time.perf_counter()
         response = snk_post(token, snk_service, request_body)
         json_str = response["responseBody"]["rows"][0][0]
         estoque = json.loads(json_str)
         logging.debug(json.dumps(estoque, indent=2, ensure_ascii=False))
+        elapsed = time.perf_counter() - start  # tempo decorrido
+        logging.info(f"🕐 [Sankhya] Latência: {elapsed:.3f}s para {codprod}")
         return estoque
     except Exception as e:
         logging.error(e)

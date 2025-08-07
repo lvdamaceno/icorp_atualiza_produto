@@ -66,7 +66,7 @@ def sankhya_fetch_json_produto(token, codprod):
         produto = json.loads(json_str)
         logging.debug(json.dumps(produto, indent=2, ensure_ascii=False))
         elapsed = time.perf_counter() - start  # tempo decorrido
-        logging.info(f"🕐 [Sankhya] Latência: {elapsed:.3f}s para {codprod}")
+        logging.debug(f"🕐 [Sankhya] Latência: {elapsed:.3f}s para {codprod}")
         return produto
     except Exception as e:
         logging.error(e)
@@ -88,7 +88,7 @@ def sankhya_fetch_json_estoque(token, codprod):
         estoque = json.loads(json_str)
         logging.debug(json.dumps(estoque, indent=2, ensure_ascii=False))
         elapsed = time.perf_counter() - start  # tempo decorrido
-        logging.info(f"🕐 [Sankhya] Latência: {elapsed:.3f}s para {codprod}")
+        logging.debug(f"🕐 [Sankhya] Latência: {elapsed:.3f}s para {codprod}")
         return estoque
     except Exception as e:
         logging.error(e)

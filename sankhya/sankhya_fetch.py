@@ -58,11 +58,14 @@ def sankhya_fetch_json_produto(token, codprod):
             "sql": f"SELECT [sankhya].[CC_CS_JSON_PRODUTO]({codprod})"
         }
     }
-    response = snk_post(token, snk_service, request_body)
-    json_str = response["responseBody"]["rows"][0][0]
-    produto = json.loads(json_str)
-    logging.debug(json.dumps(produto, indent=2, ensure_ascii=False))
-    return produto
+    try:
+        response = snk_post(token, snk_service, request_body)
+        json_str = response["responseBody"]["rows"][0][0]
+        produto = json.loads(json_str)
+        logging.debug(json.dumps(produto, indent=2, ensure_ascii=False))
+        return produto
+    except Exception as e:
+        logging.error(e)
 
 
 def sankhya_fetch_json_estoque(token, codprod):
@@ -74,8 +77,11 @@ def sankhya_fetch_json_estoque(token, codprod):
             "sql": f"SELECT [sankhya].[CC_CS_JSON_ESTOQUE]({codprod})"
         }
     }
-    response = snk_post(token, snk_service, request_body)
-    json_str = response["responseBody"]["rows"][0][0]
-    estoque = json.loads(json_str)
-    logging.debug(json.dumps(estoque, indent=2, ensure_ascii=False))
-    return estoque
+    try:
+        response = snk_post(token, snk_service, request_body)
+        json_str = response["responseBody"]["rows"][0][0]
+        estoque = json.loads(json_str)
+        logging.debug(json.dumps(estoque, indent=2, ensure_ascii=False))
+        return estoque
+    except Exception as e:
+        logging.error(e)

@@ -18,6 +18,7 @@ snk_appkey   = os.getenv("SANKHYA_APP_KEY")
 snk_password = os.getenv("SANKHYA_PASSWORD")
 snk_username = os.getenv("SANKHYA_USERNAME")
 
+session = requests.Session()
 
 @retry(
     stop=stop_after_attempt(5),
@@ -34,18 +35,16 @@ def login():
         'password': snk_password,
         'username': snk_username
     }
-
-    resp = requests.post(url, headers=headers, timeout=5)
-    # <-- garante HTTPError em 4xx/5xx
-    resp.raise_for_status()
-
-    data = resp.json()  # JSONDecodeError vira ValueError
-    token = data.get("bearerToken")
-    if not token:
-        # sinaliza falha se veio sem token
-        raise ValueError("Resposta não trouxe 'bearerToken'")
-
-    return token
+    try:
+        resp = session.post(url, headers=headers, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        token = data.get("bearerToken")
+        if not token:
+            raise ValueError("Resposta não trouxe 'bearerToken'")
+        return token
+    except requests.exceptions.RequestException as e:
+        logger.error(e)
 
 
 @retry(
@@ -59,10 +58,11 @@ def snk_post(token, service, payload):
     url = f'{snk_url_base}/gateway/v1/mge/service.sbr'
     params = {'serviceName': service, 'outputType': 'json'}
     headers = {'Authorization': f'Bearer {token}'}
-
-    resp = requests.post(url, headers=headers, params=params, json=payload, timeout=10)
-    resp.raise_for_status()
-
-    result = resp.json()
-    logger.debug(json.dumps(result, indent=2, ensure_ascii=False))
-    return result
+    try:
+        resp = session.post(url, headers=headers, params=params, json=payload, timeout=10)
+        resp.raise_for_status()
+        result = resp.json()
+        logger.debug(json.dumps(result, indent=2, ensure_ascii=False))
+        return result
+    except requests.exceptions.RequestException as e:
+        logger.error(e)

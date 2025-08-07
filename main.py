@@ -1,4 +1,3 @@
-
 import logging
 
 from icorp.icorp_send import icorp_post
@@ -11,7 +10,8 @@ logging_config()
 if __name__ == "__main__":
     token = login()
 
-    products = sankhya_list_codprod(token)
+    # products = sankhya_list_codprod(token)
+    products = ['444923', '444924', '444925', '444926', '444569']
 
     for product in products:
         logging.info(f"▶️ Iniciando integração do produto: {product}")
@@ -38,5 +38,5 @@ if __name__ == "__main__":
         logging.info(f"🚀 Enviando estoque do produto")
         estoque = sankhya_fetch_json_estoque(token, product)
         icorp_post('Saldos_Atualiza', estoque)
-
+        #
         logging.info(45*'=')

@@ -1,8 +1,8 @@
 import logging
 
-from icorp.icorp_send import icorp_post
+from process import process_product, process_image, process_estoque
 from sankhya.sankhya_client import login
-from sankhya.sankhya_fetch import sankhya_fetch_json_produto, sankhya_fetch_json_estoque, sankhya_list_codprod
+from sankhya.sankhya_fetch import sankhya_list_codprod
 from utils import logging_config
 
 logging_config()
@@ -11,32 +11,13 @@ if __name__ == "__main__":
     token = login()
 
     # products = sankhya_list_codprod(token)
-    products = ['444923', '444924', '444925', '444926', '444569']
+    products = ['444923', '444924']
 
     for product in products:
         logging.info(f"▶️ Iniciando integração do produto: {product}")
 
-        # envio do cadastro
-        logging.info(f"🚀 Enviando dados do produto")
-        dados_produto = sankhya_fetch_json_produto(token, product)
-        icorp_post('ProdutoUpdate', dados_produto)
+        process_product(token, product)
+        process_image(product)
+        process_estoque(token, product)
 
-        # envio da imagem
-        logging.info(f"🚀 Enviando imagem do produto")
-        imagem = [
-            {
-                "CodigoProduto": f"{product}",
-                "Ordem": 0,
-                "Descricao": f"{product}.jpg",
-                "URLImagem": f"https://img.casacontente.com.br/{product}.jpg",
-                "IsImgPadrao": False
-            }
-        ]
-        icorp_post('ProdutoImagens', imagem)
-
-        # enviar estoque
-        logging.info(f"🚀 Enviando estoque do produto")
-        estoque = sankhya_fetch_json_estoque(token, product)
-        icorp_post('Saldos_Atualiza', estoque)
-        #
         logging.info(45*'=')

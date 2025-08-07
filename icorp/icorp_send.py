@@ -30,13 +30,13 @@ def icorp_post(service, payload):
     url = f'https://cc01.csicorpnet.com.br/CS50Integracao_API/rest/CS_IntegracaoV1/{service}?In_Tenant_ID={tenant}'
     try:
         start = time.perf_counter()
-        resp = session.post(url, json=payload, timeout=(5, 60), stream=True)
+        resp = session.post(url, json=payload, timeout=(5, 90), stream=True)
         logging.debug(f"STATUS: {resp.status_code}")
         logging.debug(f"BODY: {resp.text!r}")
         resp.raise_for_status()
         logging.info(f"✅ POST '{service}' bem-sucedido: {resp.status_code}")
         elapsed = time.perf_counter() - start  # tempo decorrido
-        logging.debug(f"🕐 [Icorp] Latência: {elapsed:.3f}s para serviço {service}")
+        logging.info(f"🕐 [Icorp] Latência: {elapsed:.3f}s para serviço {service}")
         return
     except requests.exceptions.RequestException as e:
         logging.error(f"❌ Falha no POST '{service}': {e}")

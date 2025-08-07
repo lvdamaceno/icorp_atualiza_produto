@@ -40,7 +40,7 @@ def login():
         'username': snk_username
     }
     try:
-        resp = session.post(url, headers=headers, timeout=5)
+        resp = session.post(url, headers=headers, timeout=30)
         resp.raise_for_status()
         data = resp.json()
         token = data.get("bearerToken")
@@ -55,18 +55,23 @@ def login():
     stop=stop_after_attempt(5),
     wait=wait_fixed(5),
     before_sleep=before_sleep_log(logger, logging.WARNING),
-    retry_error_callback=lambda state: logger.error("Todas as tentativas falharam.")
+    reraise=True
 )
 def snk_post(token, service, payload):
     logger.debug(f"🔗 POST {service}")
     url = f'{snk_url_base}/gateway/v1/mge/service.sbr'
     params = {'serviceName': service, 'outputType': 'json'}
     headers = {'Authorization': f'Bearer {token}'}
-    try:
-        resp = session.post(url, headers=headers, params=params, json=payload, timeout=10)
-        resp.raise_for_status()
-        result = resp.json()
-        logger.debug(json.dumps(result, indent=2, ensure_ascii=False))
-        return result
-    except requests.exceptions.RequestException as e:
-        logger.error(e)
+
+    # deixamos as exceções do requests rolarem
+    resp = session.post(
+        url,
+        headers=headers,
+        params=params,
+        json=payload,
+        timeout=30
+    )
+    resp.raise_for_status()
+    result = resp.json()
+    logger.debug(json.dumps(result, indent=2, ensure_ascii=False))
+    return result

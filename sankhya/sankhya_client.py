@@ -2,10 +2,10 @@ import json
 import logging
 import os
 
-from dotenv import load_dotenv
 import requests
+from dotenv import load_dotenv
 from requests.adapters import HTTPAdapter
-from tenacity import before_sleep_log, retry, stop_after_attempt, wait_fixed
+from tenacity import retry, stop_after_attempt, wait_fixed, before_sleep_log
 
 from utils import logging_config
 

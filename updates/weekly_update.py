@@ -1,6 +1,6 @@
-from process import process_integration
 from sankhya.sankhya_client import login
 from sankhya.sankhya_fetch import sankhya_list_weekly_codprod
+from updates.process import process_integration
 from utils import logging_config
 
 logging_config()

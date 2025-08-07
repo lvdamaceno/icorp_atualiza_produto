@@ -124,6 +124,9 @@ def sankhya_list_weekly_codprod(token, batch_size=5000):
                 UNION
                 SELECT DISTINCT CODPROD FROM TGFPRO 
                 WHERE CAST(DTALTER AS DATE) BETWEEN DATEADD(DAY, -6, CAST(GETDATE() AS DATE)) AND CAST(GETDATE() AS DATE)
+                AND ATIVO = 'S'
+                AND USOPROD = 'R'
+                AND CODGRUPOPROD <= '1159999'
                 ) AS D
             ) AS T
             WHERE RN BETWEEN {start} AND {end}
@@ -177,6 +180,9 @@ def sankhya_list_daily_codprod(token, batch_size=5000):
                 UNION
                 SELECT DISTINCT CODPROD FROM TGFPRO 
                 WHERE CAST(DTALTER AS DATE) = CAST(GETDATE() AS DATE)
+                AND ATIVO = 'S'
+                AND USOPROD = 'R'
+                AND CODGRUPOPROD <= '1159999'
                 ) AS D
             ) AS T
             WHERE RN BETWEEN {start} AND {end}
@@ -230,6 +236,9 @@ def sankhya_list_minutes_codprod(token, batch_size=5000):
                 UNION
                 SELECT DISTINCT CODPROD FROM TGFPRO 
                 WHERE DTALTER BETWEEN DATEADD(MINUTE, -10, GETDATE()) AND GETDATE()
+                AND ATIVO = 'S'
+                AND USOPROD = 'R'
+                AND CODGRUPOPROD <= '1159999'
                 ) AS D
             ) AS T
             WHERE RN BETWEEN {start} AND {end}

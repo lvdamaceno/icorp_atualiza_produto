@@ -1,4 +1,5 @@
 import logging
+import time
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -24,9 +25,12 @@ logger = logging.getLogger(__name__)
 def fetch_img(product):
     url = f'https://img.casacontente.com.br/{product}.jpg'
     try:
+        start = time.perf_counter()
         response = session.get(url)
         response.raise_for_status()
         logging.info(f"✅ GET 'Imagem' bem-sucedido: {response.status_code}")
+        elapsed = time.perf_counter() - start  # tempo decorrido
+        logging.info(f"🕐 [Sankhya] Latência: {elapsed:.3f}s para imagem do produto {product}")
         return url
     except requests.exceptions.RequestException as e:
         logging.info(f"🚫 GET 'Imagem' mal-sucedido")

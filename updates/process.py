@@ -1,5 +1,6 @@
 import logging
 import time
+import statistics
 
 from icorp.icorp_send import icorp_post
 from img.fetch_img import fetch_img
@@ -33,10 +34,16 @@ def process_estoque(token, product):
     icorp_post('Saldos_Atualiza', estoque)
 
 
+import time
+import logging
+
 def process_integration(token, products):
     total = len(products)
     logging.info(f"Total de envios programados: {total}")
-    logging.info(45 * '=')
+    logging.info('=' * 45)
+
+    media = 0.0
+    count = 0
 
     for product in products:
         start = time.perf_counter()
@@ -46,9 +53,15 @@ def process_integration(token, products):
         process_image(product)
         process_estoque(token, product)
 
-        total -= 1
         elapsed = time.perf_counter() - start
-        logging.info(f"🕐 Tempo de execução total: {elapsed:.3f}s")
-        logging.info(f"Faltam {total} envios")
-        logging.info(45 * '=')
+        count += 1
+        # atualiza média incremental
+        media += (elapsed - media) / count
+
+        total -= 1
+
+        logging.info(f"🕐 Tempo desta iteração: {elapsed:.3f}s")
+        logging.info(f"🕐 Tempo médio até agora: {media:.3f}s")
+        logging.info(f"⚙️ Envio restante: {total}")
+        logging.info('=' * 45)
 

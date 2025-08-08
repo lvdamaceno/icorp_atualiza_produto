@@ -233,7 +233,7 @@ def sankhya_list_minutes_codprod(token, batch_size=5000):
                 WHERE PRO.ATIVO = 'S'
                 AND PRO.USOPROD = 'R'
                 AND PRO.CODGRUPOPROD <= '1159999'
-                AND CAB.DTNEG BETWEEN DATEADD(MINUTE, -10, GETDATE()) AND GETDATE()
+                AND CAB.DTALTER BETWEEN DATEADD(MINUTE, -10, GETDATE()) AND GETDATE()
                 UNION
                 SELECT DISTINCT CODPROD FROM TGFPRO 
                 WHERE DTALTER BETWEEN DATEADD(MINUTE, -10, GETDATE()) AND GETDATE()

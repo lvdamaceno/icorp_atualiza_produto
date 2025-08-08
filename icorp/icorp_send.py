@@ -18,7 +18,7 @@ session.mount("https://", adapter)
 session.mount("http://", adapter)
 
 @retry(
-    stop=stop_after_attempt(5),
+    stop=stop_after_attempt(3),
     wait=wait_fixed(5),
     before_sleep=before_sleep_log(logger, logging.WARNING),
     retry_error_callback=lambda state: logger.error("Todas as tentativas falharam.")
@@ -30,7 +30,7 @@ def icorp_post(service, payload):
     url = f'https://cc01.csicorpnet.com.br/CS50Integracao_API/rest/CS_IntegracaoV1/{service}?In_Tenant_ID={tenant}'
     try:
         start = time.perf_counter()
-        resp = session.post(url, json=payload, timeout=(5, 90), stream=True)
+        resp = session.post(url, json=payload, timeout=(5, 60), stream=True)
         logging.debug(f"STATUS: {resp.status_code}")
         logging.debug(f"BODY: {resp.text!r}")
         resp.raise_for_status()

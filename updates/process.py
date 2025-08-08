@@ -46,8 +46,8 @@ def process_integration(token, products):
         start = time.perf_counter()
         logging.info(f"▶️ Iniciando integração do produto: {product}")
 
-        # process_product(token, product)
-        # process_image(product)
+        process_product(token, product)
+        process_image(product)
         process_estoque(token, product)
 
         elapsed = time.perf_counter() - start
@@ -59,7 +59,7 @@ def process_integration(token, products):
 
         logging.info(f"🕐 Tempo desta iteração: {elapsed:.3f}s")
         logging.info(f"🕐 Tempo médio até agora: {media:.3f}s")
-        logging.info(f"⚙️ Envio restante: {total}")
+        logging.info(f"⚙️ Envio restante: {total} ({(total * media)/60:.3f}m)")
         logging.info('=' * 45)
 
     elapsed = time.perf_counter() - start

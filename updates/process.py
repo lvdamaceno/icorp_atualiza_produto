@@ -47,7 +47,7 @@ def process_integration(token, products):
         logging.info(f"▶️ Iniciando integração do produto: {product}")
 
         # process_product(token, product)
-        process_image(product)
+        # process_image(product)
         process_estoque(token, product)
 
         elapsed = time.perf_counter() - start

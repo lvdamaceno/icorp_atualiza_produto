@@ -128,6 +128,11 @@ def sankhya_list_weekly_codprod(token, batch_size=5000):
                 AND ATIVO = 'S'
                 AND USOPROD = 'R'
                 AND CODGRUPOPROD <= '1159999'
+                UNION
+                SELECT DISTINCT LTRIM(RTRIM(SUBSTRING(CHAVE, CHARINDEX('CODPROD=', CHAVE) + LEN('CODPROD='),
+                CHARINDEX('CODLOCAL=', CHAVE) - (CHARINDEX('CODPROD=', CHAVE) + LEN('CODPROD=')))
+                )) AS CODPROD FROM TSILGT WHERE 
+                CAST(DHACAO AS DATE) BETWEEN DATEADD(DAY, -6, CAST(GETDATE() AS DATE)) AND CAST(GETDATE() AS DATE)
                 ) AS D
             ) AS T
             WHERE RN BETWEEN {start} AND {end}
@@ -184,6 +189,10 @@ def sankhya_list_daily_codprod(token, batch_size=5000):
                 AND ATIVO = 'S'
                 AND USOPROD = 'R'
                 AND CODGRUPOPROD <= '1159999'
+                UNION
+                SELECT DISTINCT LTRIM(RTRIM(SUBSTRING(CHAVE, CHARINDEX('CODPROD=', CHAVE) + LEN('CODPROD='),
+                CHARINDEX('CODLOCAL=', CHAVE) - (CHARINDEX('CODPROD=', CHAVE) + LEN('CODPROD=')))
+                )) AS CODPROD FROM TSILGT WHERE CAST(DHACAO AS DATE) = CAST(GETDATE() AS DATE)
                 ) AS D
             ) AS T
             WHERE RN BETWEEN {start} AND {end}
@@ -240,6 +249,10 @@ def sankhya_list_minutes_codprod(token, batch_size=5000):
                 AND ATIVO = 'S'
                 AND USOPROD = 'R'
                 AND CODGRUPOPROD <= '1159999'
+                UNION
+                SELECT DISTINCT LTRIM(RTRIM(SUBSTRING(CHAVE, CHARINDEX('CODPROD=', CHAVE) + LEN('CODPROD='),
+                CHARINDEX('CODLOCAL=', CHAVE) - (CHARINDEX('CODPROD=', CHAVE) + LEN('CODPROD=')))
+                )) AS CODPROD FROM TSILGT WHERE DHACAO BETWEEN DATEADD(MINUTE, -10, GETDATE()) AND GETDATE()
                 ) AS D
             ) AS T
             WHERE RN BETWEEN {start} AND {end}

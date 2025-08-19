@@ -12,6 +12,22 @@ def process_product(token, product):
     icorp_post('ProdutoUpdate', dados_produto)
 
 
+def process_codbarra(product):
+    logging.info(f"🚀 Enviando codbarra do produto")
+    codbarra = [
+        {
+            "CodigoProduto": f"{product}",
+            "EAN_Tributavel": f"{product}",
+            "UnVendaVarejo": "UN",
+            "FatorConversao": "",
+            "TipoConversao": "",
+            "TipoCBarra": "Sistema",
+            "IsImprimeEtq": False
+        }
+    ]
+    icorp_post('CodigoBarra', codbarra)
+
+
 def process_image(product):
     img_url = fetch_img(product)
     logging.info(f"🚀 Enviando imagem do produto")
@@ -47,6 +63,7 @@ def process_integration(token, products):
         logging.info(f"▶️ Iniciando integração do produto: {product}")
 
         process_product(token, product)
+        process_codbarra(product)
         process_image(product)
         process_estoque(token, product)
 
@@ -56,10 +73,12 @@ def process_integration(token, products):
         media += (elapsed - media) / count
 
         total -= 1
+        minutes = (total * media) / 60
+        hours = minutes / 60
 
         logging.info(f"🕐 Tempo desta iteração: {elapsed:.3f}s")
         logging.info(f"🕐 Tempo médio até agora: {media:.3f}s")
-        logging.info(f"⚙️ Envio restante: {total} ({(total * media)/60:.3f}m)")
+        logging.info(f"⚙️ Envio restante: {total} ({minutes:.3f}m) / ({hours:.3f}h)")
         logging.info('=' * 45)
 
     elapsed = time.perf_counter() - start

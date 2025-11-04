@@ -52,56 +52,35 @@ def sankhya_fetch_json_estoque(token, codprod):
         logging.error(e)
 
 
-def sankhya_list_total_codprod(token, batch_size=5000):
-    all_products = []
-    offset = 0
+def sankhya_list_total_codprod(token, start, end):
+    sql = f"""
+        SELECT CODPROD FROM (
+          SELECT *, ROW_NUMBER() OVER (ORDER BY D.CODPROD) AS RN FROM (
+              SELECT DISTINCT PRO.CODPROD 
+              FROM TGFPRO PRO
+              INNER JOIN TGFEST EST ON PRO.CODPROD = EST.CODPROD
+              WHERE PRO.ATIVO = 'S'
+              AND PRO.CODGRUPOPROD <= '1159999'
+              AND EST.ESTOQUE > 0
+              AND EST.CODLOCAL = 102
+          ) AS D
+        ) AS T
+        WHERE RN BETWEEN {start} AND {end}
+    """
 
-    while True:
-        # calcula o intervalo RN para este lote
-        start = offset * batch_size + 1
-        end = (offset + 1) * batch_size
+    body = {
+        "serviceName": "DbExplorerSP.executeQuery",
+        "requestBody": {"sql": sql}
+    }
 
-        # monta o SQL com row_number + between
-        sql = f"""
-            SELECT CODPROD
-                FROM (
-                    SELECT
-                        PRO.CODPROD,
-                        ROW_NUMBER() OVER (ORDER BY PRO.CODPROD) AS RN
-                    FROM 
-                        TGFPRO PRO
-                    INNER JOIN TGFEST EST ON PRO.CODPROD = EST.CODPROD
-                    WHERE 
-                        PRO.ATIVO = 'S'
-                        AND PRO.USOPROD = 'R'
-                        AND PRO.CODGRUPOPROD <= '1159999'
-                    GROUP BY PRO.CODPROD
-                    HAVING SUM(EST.ESTOQUE) > 0
-                ) AS T
-            WHERE RN BETWEEN {start} AND {end}
-            ORDER BY CODPROD
-        """
+    resp = snk_post(token, "DbExplorerSP.executeQuery", body)
+    rows = resp["responseBody"]["rows"]
 
-        body = {
-            "serviceName": "DbExplorerSP.executeQuery",
-            "requestBody": {"sql": sql}
-        }
+    if not rows:
+        return []
 
-        # OBS: passe "DbExplorerSP.executeQuery" no service, não "loadView"
-        resp = snk_post(token, "DbExplorerSP.executeQuery", body)
-
-        # executeQuery retorna os dados em responseBody.rows como lista de listas
-        rows = resp["responseBody"]["rows"]
-        if not rows:
-            break
-
-        # extrai o primeiro campo de cada row (CODPROD) e estende a lista
-        batch = [row[0] for row in rows]
-        all_products.extend(batch)
-
-        offset += 1
-
-    return all_products
+    # extrai o primeiro campo (CODPROD)
+    return [row[0] for row in rows]
 
 
 def sankhya_list_weekly_codprod(token, batch_size=5000):

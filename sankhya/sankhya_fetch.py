@@ -61,7 +61,6 @@ def sankhya_list_total_codprod(token, start, end):
               INNER JOIN TGFEST EST ON PRO.CODPROD = EST.CODPROD
               WHERE PRO.ATIVO = 'S'
               AND PRO.CODGRUPOPROD <= '1159999'
-              AND EST.ESTOQUE > 0
               AND EST.CODLOCAL = 102
           ) AS D
         ) AS T

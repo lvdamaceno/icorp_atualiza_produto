@@ -58,10 +58,8 @@ def sankhya_list_total_codprod(token, start, end):
           SELECT *, ROW_NUMBER() OVER (ORDER BY D.CODPROD) AS RN FROM (
               SELECT DISTINCT PRO.CODPROD 
               FROM TGFPRO PRO
-              INNER JOIN TGFEST EST ON PRO.CODPROD = EST.CODPROD
               WHERE PRO.ATIVO = 'S'
               AND PRO.CODGRUPOPROD <= '1159999'
-              AND EST.CODLOCAL = 102
           ) AS D
         ) AS T
         WHERE RN BETWEEN {start} AND {end}

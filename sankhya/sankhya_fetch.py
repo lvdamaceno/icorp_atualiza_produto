@@ -246,7 +246,6 @@ def sankhya_list_minutes_codprod(token, batch_size=5000):
                         AND PRO.CODGRUPOPROD <= '1159999'
                         AND CAB.DTALTER BETWEEN DATEADD(MINUTE, -10, GETDATE()) AND GETDATE()
                         GROUP BY ITE.CODPROD
-                        HAVING SUM(EST.ESTOQUE) > 0
             
                         UNION
                         
@@ -257,7 +256,6 @@ def sankhya_list_minutes_codprod(token, batch_size=5000):
                         AND PRO.USOPROD = 'R'
                         AND PRO.CODGRUPOPROD <= '1159999'
                         GROUP BY PRO.CODPROD
-                        HAVING SUM(EST.ESTOQUE) > 0
                     ) AS D
             ) AS T
             WHERE RN BETWEEN {start} AND {end}

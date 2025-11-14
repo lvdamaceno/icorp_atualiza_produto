@@ -175,7 +175,6 @@ def sankhya_list_daily_codprod(token, batch_size=5000):
                     AND PRO.CODGRUPOPROD <= '1159999'
                     AND CAST(CAB.DTNEG AS DATE) = CAST(GETDATE() AS DATE)
                     GROUP BY ITE.CODPROD
-                    HAVING SUM(EST.ESTOQUE) > 0 
             
                     UNION
             
@@ -186,7 +185,6 @@ def sankhya_list_daily_codprod(token, batch_size=5000):
                     AND PRO.USOPROD = 'R'
                     AND PRO.CODGRUPOPROD <= '1159999'
                     GROUP BY PRO.CODPROD
-                    HAVING SUM(EST.ESTOQUE) > 0
             
                     UNION
             

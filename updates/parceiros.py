@@ -58,7 +58,7 @@ if __name__ == "__main__":
         (195001, 200000)
     ]
 
-    with ProcessPoolExecutor(max_workers=len(lotes)) as executor:
+    with ProcessPoolExecutor(10) as executor:
         futures = {executor.submit(run_lote, start, end): (start, end) for start, end in lotes}
 
         for future in as_completed(futures):
@@ -68,3 +68,6 @@ if __name__ == "__main__":
                 logging.info(result)
             except Exception as e:
                 logging.info(f"Erro no lote {start}-{end}: {e}")
+
+    # for lote in lotes:
+    #     run_lote(lote[0], lote[1])

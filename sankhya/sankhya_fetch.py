@@ -29,7 +29,6 @@ def sankhya_fetch_json_produto(token, codprod):
     except Exception as e:
         logging.error(e)
 
-
 def sankhya_fetch_json_estoque(token, codprod):
     logging.info(f"🔍 Buscando estoque do produto")
     snk_service = 'DbExplorerSP.executeQuery'
@@ -279,3 +278,52 @@ def sankhya_list_minutes_codprod(token, batch_size=5000):
         offset += 1
 
     return all_products
+
+
+def sankhya_fetch_json_parceiro(token, codpard):
+    logging.info(f"🔍 Buscando dados do parceiro")
+    snk_service = 'DbExplorerSP.executeQuery'
+    request_body = {
+        "serviceName": "DbExplorerSP.executeQuery",
+        "requestBody": {
+            "sql": f"SELECT [sankhya].[CC_CS_JSON_PARCEIRO]({codpard})"
+        }
+    }
+    try:
+        start = time.perf_counter()
+        response = snk_post(token, snk_service, request_body)
+        json_str = response["responseBody"]["rows"][0][0]
+        parceiro = json.loads(json_str)
+        logging.debug(json.dumps(parceiro, indent=2, ensure_ascii=False))
+        elapsed = time.perf_counter() - start  # tempo decorrido
+        logging.info(f"🕐 [Sankhya] Latência: {elapsed:.3f}s para dados do parceiro {codpard}")
+        return parceiro
+    except Exception as e:
+        logging.error(e)
+
+
+def sankhya_list_total_parceiros(token, start, end):
+    sql = f"""
+        SELECT CODPARC FROM (
+              SELECT *, ROW_NUMBER() OVER (ORDER BY D.CODPARC) AS RN FROM (
+                  SELECT DISTINCT PAR.CODPARC 
+                  FROM TGFPAR PAR
+                  WHERE CODPARC > 0
+              ) AS D
+            ) AS T
+        WHERE RN BETWEEN {start} AND {end}
+    """
+
+    body = {
+        "serviceName": "DbExplorerSP.executeQuery",
+        "requestBody": {"sql": sql}
+    }
+
+    resp = snk_post(token, "DbExplorerSP.executeQuery", body)
+    rows = resp["responseBody"]["rows"]
+
+    if not rows:
+        return []
+
+    # extrai o primeiro campo (CODPROD)
+    return [row[0] for row in rows]

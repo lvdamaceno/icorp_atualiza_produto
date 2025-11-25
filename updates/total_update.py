@@ -7,11 +7,6 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 logging_config()
 
-# if __name__ == "__main__":
-#     token = login()
-#     products = sankhya_list_total_codprod(token, 1, 3000)
-#     process_integration(token, products)
-
 def run_lote(start, end):
     token = login()  # cada processo faz seu login independente
     products = sankhya_list_total_codprod(token, start, end)
@@ -20,6 +15,7 @@ def run_lote(start, end):
 
 if __name__ == "__main__":
     lotes = [
+        # total de produtos
         (1, 2000),
         (2001, 4000),
         (4001, 6000),

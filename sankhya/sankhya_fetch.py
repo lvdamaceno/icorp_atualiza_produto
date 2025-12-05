@@ -253,6 +253,10 @@ def sankhya_list_minutes_codprod(token, batch_size=5000):
                         AND PRO.USOPROD = 'R'
                         AND PRO.CODGRUPOPROD <= '1159999'
                         GROUP BY PRO.CODPROD
+                        
+                        UNION 
+
+                        SELECT DISTINCT CODPROD FROM TGFEXC WHERE DHALTREG BETWEEN DATEADD(MINUTE, -10, GETDATE()) AND GETDATE()
                     ) AS D
             ) AS T
             WHERE RN BETWEEN {start} AND {end}

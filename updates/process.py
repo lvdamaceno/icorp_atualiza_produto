@@ -38,16 +38,15 @@ def process_codbarra(product):
 
 
 def process_image(product):
+    # produtos sem foto também são enviados (URLImagem "None", como antes)
     img_url = fetch_img(product)
-    if not img_url:
-        return
     logger.info(f"🚀 Enviando imagem do produto {product}")
     imagem = [
         {
             "CodigoProduto": f"{product}",
             "Ordem": 0,
             "Descricao": f"{product}.jpg",
-            "URLImagem": img_url,
+            "URLImagem": f"{img_url}",
             "IsImgPadrao": False
         }
     ]

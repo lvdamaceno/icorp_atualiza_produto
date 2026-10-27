@@ -1,19 +1,28 @@
 import logging
+import os
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from icorp.icorp_send import icorp_post
 from img.fetch_img import fetch_img
 from sankhya.sankhya_fetch import sankhya_fetch_json_produto, sankhya_fetch_json_estoque, sankhya_fetch_json_parceiro
 
+logger = logging.getLogger(__name__)
 
-def process_product(token, product):
-    logging.info(f"🚀 Enviando dados do produto")
-    dados_produto = sankhya_fetch_json_produto(token, product)
+# aborta a execução se tudo está falhando (API fora do ar), em vez de insistir por horas
+MAX_FALHAS_CONSECUTIVAS = 20
+
+
+def process_product(product):
+    logger.info(f"🚀 Enviando dados do produto {product}")
+    dados_produto = sankhya_fetch_json_produto(product)
+    if not dados_produto:
+        raise ValueError(f"CC_CS_JSON_PRODUTO não retornou dados para o produto {product}")
     icorp_post('ProdutoUpdate', dados_produto)
 
 
 def process_codbarra(product):
-    logging.info(f"🚀 Enviando codbarra do produto")
+    logger.info(f"🚀 Enviando codbarra do produto {product}")
     codbarra = [
         {
             "CodigoProduto": f"{product}",
@@ -30,121 +39,134 @@ def process_codbarra(product):
 
 def process_image(product):
     img_url = fetch_img(product)
-    logging.info(f"🚀 Enviando imagem do produto")
+    if not img_url:
+        return
+    logger.info(f"🚀 Enviando imagem do produto {product}")
     imagem = [
         {
             "CodigoProduto": f"{product}",
             "Ordem": 0,
             "Descricao": f"{product}.jpg",
-            "URLImagem": f"{img_url}",
+            "URLImagem": img_url,
             "IsImgPadrao": False
         }
     ]
     icorp_post('ProdutoImagens', imagem)
 
 
-def process_estoque(token, product):
-    logging.info(f"🚀 Enviando estoque do produto")
-    estoque = sankhya_fetch_json_estoque(token, product)
+def process_estoque(product):
+    logger.info(f"🚀 Enviando estoque do produto {product}")
+    estoque = sankhya_fetch_json_estoque(product)
+    if not estoque:
+        logger.warning(f"⚠️ CC_CS_JSON_ESTOQUE não retornou dados para o produto {product}, estoque não enviado")
+        return
     icorp_post('Saldos_Atualiza', estoque)
 
 
-def process_integration(token, products):
-    total = len(products)
-    logging.info(f"Total de envios programados: {total}")
-    logging.info('=' * 45)
-
-    media = 0.0
-    count = 0
-    start = time.perf_counter()
-
-    for product in products:
-        start = time.perf_counter()
-        logging.info(f"▶️ Iniciando integração do produto: {product}")
-
-        process_product(token, product)
-        process_codbarra(product)
-        process_image(product)
-        process_estoque(token, product)
-
-        elapsed = time.perf_counter() - start
-        count += 1
-        # atualiza média incremental
-        media += (elapsed - media) / count
-
-        total -= 1
-        minutes = (total * media) / 60
-        hours = minutes / 60
-
-        logging.info(f"🕐 Tempo desta iteração: {elapsed:.3f}s")
-        logging.info(f"🕐 Tempo médio até agora: {media:.3f}s")
-        logging.info(f"⚙️ Envio restante: {total} ({minutes:.3f}m) / ({hours:.3f}h)")
-        logging.info('=' * 45)
-
-    elapsed = time.perf_counter() - start
-    logging.info(f"🕐 Tempo total: {elapsed:.3f}s")
+def integrate_product(product):
+    process_product(product)
+    process_codbarra(product)
+    process_image(product)
+    process_estoque(product)
 
 
+def process_parceiro(parceiro):
+    logger.info(f"🚀 Enviando dados do parceiro {parceiro}")
 
-def process_parceiro(token, parceiro):
-    logging.info("🚀 Enviando dados do parceiro")
-
-    tentativas = 10
+    tentativas = 3
     dados_parceiro = None
-    base_wait = 1  # tempo base para calcular o delay
-
     for tentativa in range(1, tentativas + 1):
-        dados_parceiro = sankhya_fetch_json_parceiro(token, parceiro)
-
+        dados_parceiro = sankhya_fetch_json_parceiro(parceiro)
         if dados_parceiro:
-            break  # Sucesso — sai do loop
+            break
+        if tentativa < tentativas:
+            logger.warning(
+                f"⚠️ dados do parceiro {parceiro} vazio na tentativa {tentativa}/{tentativas}. "
+                f"Tentando novamente em {tentativa} segundo(s)..."
+            )
+            time.sleep(tentativa)
 
-        # Se estiver vazio → calcula tempo de espera progressivo
-        wait_time = base_wait + (tentativa - 1)
-
-        logging.warning(
-            f"⚠️ dados do parceiro {parceiro} vazio na tentativa {tentativa}/{tentativas}. "
-            f"Tentando novamente em {wait_time} segundo(s)..."
-        )
-
-        time.sleep(wait_time)
-
-    # Depois das tentativas, verifica se ainda está vazio
     if not dados_parceiro:
-        logging.error("❌ dados_parceiro continua vazio após 3 tentativas. Abortando envio.")
+        logger.warning(f"⚠️ dados do parceiro {parceiro} vazio após {tentativas} tentativas, envio ignorado")
         return
 
-    logging.info("✅ Dados obtidos, enviando para a ICORP")
     icorp_post('Cliente', dados_parceiro)
 
-def process_parceiros_integration(token, parceiros):
-    total = len(parceiros)
-    logging.info(f"Total de envios programados: {total}")
-    logging.info('=' * 45)
 
+def _run_batch(items, label, handler):
+    """Processa cada item isoladamente e retorna a lista dos que falharam."""
+    total = len(items)
+    logger.info(f"Total de envios programados: {total}")
+    logger.info('=' * 45)
+
+    failures = []
+    consecutivas = 0
     media = 0.0
-    count = 0
-    start = time.perf_counter()
+    inicio = time.perf_counter()
 
-    for parceiro in parceiros:
+    for count, item in enumerate(items, start=1):
         start = time.perf_counter()
-        logging.info(f"▶️ Iniciando integração do parceiro: {parceiro}")
+        logger.info(f"▶️ Iniciando integração do {label}: {item}")
 
-        process_parceiro(token, parceiro)
+        try:
+            handler(item)
+            consecutivas = 0
+        except Exception:
+            logger.exception(f"❌ Falha na integração do {label} {item}")
+            failures.append(item)
+            consecutivas += 1
+            if consecutivas >= MAX_FALHAS_CONSECUTIVAS:
+                raise RuntimeError(
+                    f"{consecutivas} falhas consecutivas ({label}s {failures[-consecutivas:]}), abortando execução"
+                )
 
         elapsed = time.perf_counter() - start
-        count += 1
         # atualiza média incremental
         media += (elapsed - media) / count
 
-        total -= 1
-        minutes = (total * media) / 60
+        restante = total - count
+        minutes = (restante * media) / 60
         hours = minutes / 60
 
-        logging.info(f"🕐 Tempo desta iteração: {elapsed:.3f}s")
-        logging.info(f"🕐 Tempo médio até agora: {media:.3f}s")
-        logging.info(f"⚙️ Envio restante: {total} ({minutes:.3f}m) / ({hours:.3f}h)")
-        logging.info('=' * 45)
+        logger.info(f"🕐 Tempo desta iteração: {elapsed:.3f}s")
+        logger.info(f"🕐 Tempo médio até agora: {media:.3f}s")
+        logger.info(f"⚙️ Envio restante: {restante} ({minutes:.3f}m) / ({hours:.3f}h)")
+        logger.info('=' * 45)
 
-    elapsed = time.perf_counter() - start
-    logging.info(f"🕐 Tempo total: {elapsed:.3f}s")
+    elapsed = time.perf_counter() - inicio
+    logger.info(f"🕐 Tempo total: {elapsed:.3f}s")
+    logger.info(f"📊 Resultado: {total - len(failures)} ok / {len(failures)} falha(s)")
+    if failures:
+        logger.error(f"❌ {label.capitalize()}s com falha: {failures}")
+    return failures
+
+
+def process_integration(products):
+    return _run_batch(products, 'produto', integrate_product)
+
+
+def process_parceiros_integration(parceiros):
+    return _run_batch(parceiros, 'parceiro', process_parceiro)
+
+
+def run_lotes(run_lote, lotes):
+    """Executa os lotes em processos paralelos e retorna o total de itens com falha.
+
+    Cada processo faz seu próprio login (sessão HTTP própria no Sankhya).
+    Paralelismo alto derruba o Sankhya (503) e o iCorp (timeouts), por isso é limitado por MAX_WORKERS.
+    """
+    max_workers = int(os.getenv('MAX_WORKERS', '10'))
+    total_falhas = 0
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(run_lote, start, end): (start, end) for start, end in lotes}
+
+        for future in as_completed(futures):
+            start, end = futures[future]
+            try:
+                processados, falhas = future.result()
+                total_falhas += len(falhas)
+                logger.info(f"Lote {start}-{end} finalizado com {processados} itens ({len(falhas)} falha(s))")
+            except Exception:
+                total_falhas += 1
+                logger.exception(f"❌ Erro no lote {start}-{end}")
+    return total_falhas

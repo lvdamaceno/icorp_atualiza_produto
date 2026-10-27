@@ -4,13 +4,14 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from icorp.icorp_send import icorp_post
-from img.fetch_img import fetch_img
 from sankhya.sankhya_fetch import sankhya_fetch_json_produto, sankhya_fetch_json_estoque, sankhya_fetch_json_parceiro
 
 logger = logging.getLogger(__name__)
 
 # aborta a execução se tudo está falhando (API fora do ar), em vez de insistir por horas
 MAX_FALHAS_CONSECUTIVAS = 20
+
+IMG_URL = 'https://img.casacontente.com.br/{codprod}.jpg'
 
 
 def process_product(product):
@@ -38,15 +39,15 @@ def process_codbarra(product):
 
 
 def process_image(product):
-    # produtos sem foto também são enviados (URLImagem "None", como antes)
-    img_url = fetch_img(product)
+    # URL padrão sempre enviada, mesmo sem foto: passa a funcionar quando a foto for publicada
+    img_url = IMG_URL.format(codprod=product)
     logger.info(f"🚀 Enviando imagem do produto {product}")
     imagem = [
         {
             "CodigoProduto": f"{product}",
             "Ordem": 0,
             "Descricao": f"{product}.jpg",
-            "URLImagem": f"{img_url}",
+            "URLImagem": img_url,
             "IsImgPadrao": False
         }
     ]

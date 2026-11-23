@@ -11,12 +11,23 @@ from utils import is_retryable, logging_config
 logging_config()
 logger = logging.getLogger(__name__)
 
-session = requests.Session()
-session.headers.update({
-    "User-Agent": "CasaContente-IcorpSync/1.0",
-    "Accept": "application/json",
-    "Content-Type": "application/json",
-})
+import threading
+
+_local = threading.local()
+ICORP_URL = os.getenv('ICORP_URL', 'https://cc01.csicorpnet.com.br/CS50Integracao_API/rest/CS_IntegracaoV1')
+
+
+def _sessao():
+    """Uma sessão HTTP por thread: o total envia ao iCorp em paralelo (ICORP_THREADS), e a Session não é segura entre threads."""
+    s = getattr(_local, 'sessao', None)
+    if s is None:
+        s = _local.sessao = requests.Session()
+        s.headers.update({
+            "User-Agent": "CasaContente-IcorpSync/1.0",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        })
+    return s
 
 
 class IcorpBlockedError(Exception):
@@ -45,11 +56,11 @@ def icorp_post(service, payload):
 
     logger.debug(json.dumps(payload, indent=2, ensure_ascii=False))
     tenant = os.getenv('ICORP_TENANT')
-    url = f'https://cc01.csicorpnet.com.br/CS50Integracao_API/rest/CS_IntegracaoV1/{service}?In_Tenant_ID={tenant}'
+    url = f'{ICORP_URL}/{service}?In_Tenant_ID={tenant}'
 
     start = time.perf_counter()
     # timeout: (connect, read)
-    resp = session.post(url, json=payload, timeout=(10, 60))
+    resp = _sessao().post(url, json=payload, timeout=(10, 60))
     elapsed = time.perf_counter() - start
     logger.debug(f"STATUS: {resp.status_code} | Latency: {elapsed:.3f}s")
 

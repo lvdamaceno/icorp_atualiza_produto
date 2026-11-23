@@ -2,7 +2,7 @@ import sys
 
 from sankhya.sankhya_client import login
 from sankhya.sankhya_fetch import sankhya_list_total_codprod
-from updates.process import process_integration, run_lotes
+from updates.process import process_integration_lote, run_lotes
 from utils import logging_config
 
 logging_config()
@@ -14,7 +14,7 @@ TOTAL_PRODUTOS = 50000
 def run_lote(start, end):
     login()  # cada processo faz seu login independente
     products = sankhya_list_total_codprod(start, end)
-    return len(products), process_integration(products)
+    return len(products), process_integration_lote(products)
 
 
 if __name__ == "__main__":

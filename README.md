@@ -7,6 +7,12 @@ Lê produtos, estoque e parceiros do Sankhya e envia ao iCorp (crons no Render: 
 - **Direto (padrão):** `SANKHYA_URL_BASE`, `SANKHYA_TOKEN`, `SANKHYA_APP_KEY`, `SANKHYA_USERNAME` e `SANKHYA_PASSWORD` (login antigo, a cada execução).
 - **Pela conexão central (`sankhya-central`):** com `SANKHYA_PROXY_URL=http://sankhya-central:10000` e `SANKHYA_PROXY_CHAVE` (chave do app criada na central), as consultas passam por ela, que guarda o token, respeita os limites e pausa quando o Sankhya falha, junto com os outros apps. O login direto deixa de ser usado. Só funciona com o cron na mesma região da central no Render (Virgínia).
 
+## Leitura em lote (todas as rotinas)
+
+Desde 23/11/2026 todas as rotinas (`minutes`, `daily`, `weekly`, `total` e `parceiros`) leem o Sankhya em lotes de `SANKHYA_LOTE` itens (padrão 40) numa consulta só, e enviam ao iCorp `ICORP_THREADS` itens ao mesmo tempo por processo (padrão 4). `MAX_WORKERS` (processos) passou a ter padrão 2. O que vai para o iCorp não mudou.
+
+- **Parceiros** (mensal): 172.581 parceiros em 23/11/2026. Um a um, 0,22 s por parceiro no Sankhya; em lote, 0,009 s. A lista é lida uma vez no começo e repartida entre os processos (sem o teto de 200.000). Parceiro que vier vazio no lote é relido sozinho, com as 3 tentativas de antes.
+
 ## Carga total (`updates.total_update`)
 
 Lê a lista inteira uma vez, no começo: produtos ativos da Linha de Produtos (`ATIVO = 'S'` e grupo até `1159999`; 37.432 em 23/11/2026). Ficam de fora, de propósito, os grupos de fora da linha de venda: 197 Móveis Planejados, 198 Componentes/volumes, 199 Assistência, uso contínuo, imobilizado, serviços e ECOMMERCE (5xxxxxx). Produto desativado também fica de fora (a função `CC_CS_JSON_PRODUTO` não devolve dados de inativo).

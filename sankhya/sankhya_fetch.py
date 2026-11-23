@@ -98,13 +98,21 @@ def sankhya_fetch_json_lote(codprods):
     return {int(r[0]): (ler(r[1]), ler(r[2])) for r in rows}
 
 
-def sankhya_list_total_codprod(start, end):
-    return _list_range("""
+TOTAL_PRODUTOS_SQL = """
         SELECT DISTINCT PRO.CODPROD
         FROM TGFPRO PRO
         WHERE PRO.ATIVO = 'S'
         AND PRO.CODGRUPOPROD <= '1159999'
-    """, start, end)
+"""
+
+
+def sankhya_list_total_codprod(start, end):
+    return _list_range(TOTAL_PRODUTOS_SQL, start, end)
+
+
+def sankhya_list_total_todos(batch_size=5000):
+    """A lista inteira da carga total, lida de uma vez no começo (ver updates/total_update.py)."""
+    return _list_paginated(TOTAL_PRODUTOS_SQL, batch_size)
 
 
 def sankhya_list_weekly_codprod(batch_size=5000):

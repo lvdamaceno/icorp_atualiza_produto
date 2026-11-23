@@ -224,7 +224,9 @@ def run_lotes(run_lote, lotes):
     max_workers = int(os.getenv('MAX_WORKERS', '10'))
     total_falhas = 0
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(run_lote, start, end): (start, end) for start, end in lotes}
+        # Cada lote é (início, fim) de uma fatia da lista ou, na carga total, a própria lista de códigos.
+        futures = {executor.submit(run_lote, *(lote if isinstance(lote, tuple) else (lote,))):
+                   (lote if isinstance(lote, tuple) else (lote[0], lote[-1])) for lote in lotes}
 
         for future in as_completed(futures):
             start, end = futures[future]

@@ -9,7 +9,9 @@ Lê produtos, estoque e parceiros do Sankhya e envia ao iCorp (crons no Render: 
 
 ## Carga total (`updates.total_update`)
 
-Lê os produtos ativos (cerca de 37 mil em 23/11/2026) em lotes de 2.000 por processo (`MAX_WORKERS`, 2 no Render) e, em cada processo:
+Lê a lista inteira uma vez, no começo: produtos ativos da Linha de Produtos (`ATIVO = 'S'` e grupo até `1159999`; 37.432 em 23/11/2026). Ficam de fora, de propósito, os grupos de fora da linha de venda: 197 Móveis Planejados, 198 Componentes/volumes, 199 Assistência, uso contínuo, imobilizado, serviços e ECOMMERCE (5xxxxxx). Produto desativado também fica de fora (a função `CC_CS_JSON_PRODUTO` não devolve dados de inativo).
+
+A lista é repartida em lotes de 2.000 entre os processos (`MAX_WORKERS`, 2 no Render). Antes cada processo lia a sua fatia na hora em que começava, e um produto ativado ou desativado no meio da carga fazia outro ser pulado. Em cada processo:
 
 - lê o Sankhya em lotes de `SANKHYA_LOTE` produtos (padrão 40) numa consulta só, e já lê o lote seguinte enquanto este vai para o iCorp. Um a um eram 2 chamadas e 0,48 s por produto; em lote, 0,06 s por produto e 80 vezes menos chamadas à conexão central;
 - envia ao iCorp `ICORP_THREADS` produtos ao mesmo tempo (padrão 4; com 2 processos, 8 no total);

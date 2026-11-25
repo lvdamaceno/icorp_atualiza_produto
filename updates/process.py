@@ -5,7 +5,8 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_compl
 
 from icorp.icorp_send import icorp_post
 from sankhya.sankhya_fetch import (sankhya_fetch_json_produto, sankhya_fetch_json_estoque, sankhya_fetch_json_parceiro,
-                                    sankhya_fetch_json_lote, sankhya_fetch_json_parceiro_lote)
+                                    sankhya_fetch_json_lote, sankhya_fetch_json_parceiro_lote,
+                                    sankhya_fetch_json_estoque_lote)
 
 logger = logging.getLogger(__name__)
 
@@ -59,13 +60,16 @@ def process_image(product):
     icorp_post('ProdutoImagens', imagem)
 
 
-def process_estoque(product, estoque=_NAO_LIDO):
-    logger.info(f"🚀 Enviando estoque do produto {product}")
+def process_estoque(product, estoque=_NAO_LIDO, zerar=False):
+    logger.info(f"🚀 Enviando estoque {'zerado ' if zerar else ''}do produto {product}")
     if estoque is _NAO_LIDO:
         estoque = sankhya_fetch_json_estoque(product)
     if not estoque:
         logger.warning(f"⚠️ CC_CS_JSON_ESTOQUE não retornou dados para o produto {product}, estoque não enviado")
         return
+    if zerar:
+        # produto inativo/sem TGFEST vai zerado no iCorp mesmo que ainda tenha saldo na TGFEST
+        estoque = [{**saldo, 'Qtd': 0} for saldo in estoque]
     icorp_post('Saldos_Atualiza', estoque)
 
 
@@ -221,6 +225,13 @@ def _enviar_produto(product, lidos):
         integrate_product(product, lidos.get(int(product), (None, None)))
 
 
+def _enviar_estoque_zerado(product, lidos):
+    if lidos is None:
+        process_estoque(product, zerar=True)  # leitura do lote falhou: lê este sozinho
+    else:
+        process_estoque(product, lidos.get(int(product)), zerar=True)
+
+
 def _enviar_parceiro(parceiro, lidos):
     # Sem o lote, ou vazio no lote: o caminho antigo, que lê sozinho e tenta 3 vezes.
     process_parceiro(parceiro, (lidos or {}).get(int(parceiro)))
@@ -233,6 +244,13 @@ def process_parceiros_integration(parceiros):
 def process_integration_lote(products):
     """Produtos (total, minutes, daily e weekly): os mesmos dados de integrate_product, lidos em lote."""
     return _run_lote_paralelo(products, 'produto', sankhya_fetch_json_lote, _enviar_produto)
+
+
+def process_estoque_zerado_lote(products, ja_enviados=()):
+    """Produtos inativos ou sem TGFEST: só o estoque, sempre zerado. Pula os que a integração completa já enviou."""
+    ja_enviados = {int(p) for p in ja_enviados}
+    pendentes = [p for p in products if int(p) not in ja_enviados]
+    return _run_lote_paralelo(pendentes, 'produto (estoque zerado)', sankhya_fetch_json_estoque_lote, _enviar_estoque_zerado)
 
 
 def process_parceiros_integration_lote(parceiros):

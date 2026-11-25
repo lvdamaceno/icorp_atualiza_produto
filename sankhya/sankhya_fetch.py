@@ -211,8 +211,58 @@ def sankhya_list_minutes_codprod(batch_size=5000):
 
         UNION
 
-        SELECT DISTINCT CODPROD FROM TGFEXC WHERE DHALTREG BETWEEN DATEADD(MINUTE, -{minutos}, GETDATE()) AND GETDATE()
+        SELECT DISTINCT EXC.CODPROD
+        FROM TGFEXC EXC
+        INNER JOIN TGFPRO PRO ON EXC.CODPROD = PRO.CODPROD
+        WHERE EXC.DHALTREG BETWEEN DATEADD(MINUTE, -{minutos}, GETDATE()) AND GETDATE()
+        AND PRO.ATIVO = 'S'
     """, batch_size)
+
+
+# produtos que as listagens acima descartam (inativos ou sem TGFEST): para eles só o estoque é enviado, sempre
+# zerado — senão o iCorp fica com o último saldo recebido antes da inativação/remoção do estoque
+ZERAR_ESTOQUE_SQL = """
+    SELECT DISTINCT PRO.CODPROD
+    FROM TGFPRO PRO
+    WHERE {filtro_data}
+    AND PRO.USOPROD = 'R'
+    AND PRO.CODGRUPOPROD <= '1159999'
+    AND (PRO.ATIVO = 'N' OR NOT EXISTS (SELECT 1 FROM TGFEST EST WHERE EST.CODPROD = PRO.CODPROD))
+"""
+
+
+def sankhya_list_minutes_zerar_estoque(batch_size=5000):
+    minutos = int(os.getenv('MINUTES_WINDOW', '15'))
+    filtro = f"PRO.DTALTER BETWEEN DATEADD(MINUTE, -{minutos}, GETDATE()) AND GETDATE()"
+    return _list_paginated(ZERAR_ESTOQUE_SQL.format(filtro_data=filtro), batch_size)
+
+
+def sankhya_list_daily_zerar_estoque(batch_size=5000):
+    filtro = "CAST(PRO.DTALTER AS DATE) = CAST(GETDATE() AS DATE)"
+    return _list_paginated(ZERAR_ESTOQUE_SQL.format(filtro_data=filtro), batch_size)
+
+
+def sankhya_list_weekly_zerar_estoque(batch_size=5000):
+    filtro = "CAST(PRO.DTALTER AS DATE) BETWEEN DATEADD(DAY, -6, CAST(GETDATE() AS DATE)) AND CAST(GETDATE() AS DATE)"
+    return _list_paginated(ZERAR_ESTOQUE_SQL.format(filtro_data=filtro), batch_size)
+
+
+def sankhya_list_total_zerar_estoque(batch_size=5000):
+    return _list_paginated(ZERAR_ESTOQUE_SQL.format(filtro_data="1 = 1"), batch_size)
+
+
+def sankhya_fetch_json_estoque_lote(codprods):
+    """Estoque de vários produtos numa consulta só: {CODPROD: estoque}, com None no que vier vazio."""
+    cods = sorted({int(c) for c in codprods})
+    if not cods:
+        return {}
+    start = time.perf_counter()
+    rows = _execute_query(f"""
+        SELECT PRO.CODPROD, [sankhya].[CC_CS_JSON_ESTOQUE](PRO.CODPROD)
+        FROM TGFPRO PRO WHERE PRO.CODPROD IN ({','.join(map(str, cods))})
+    """)
+    logger.info(f"🕐 [Sankhya] Latência: {time.perf_counter() - start:.3f}s para estoque de {len(cods)} produtos em lote")
+    return {int(r[0]): (json.loads(r[1]) if r[1] else None) for r in rows}
 
 
 TOTAL_PARCEIROS_SQL = """
